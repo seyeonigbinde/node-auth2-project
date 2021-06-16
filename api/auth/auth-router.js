@@ -19,22 +19,19 @@ router.post("/register", validateRoleName, (req, res, next) => {
       "role_name": "angel"
     }
    */
-  let user = req.body;
+  const { username, password } = req.body
+  const { role_name } = req
+  const hash = bcrypt.hashSync(password, 8)
 
-  // bcrypting the password before saving
-  const rounds = process.env.BCRYPT_ROUNDS || 8; // 2 ^ 8
-  const hash = bcrypt.hashSync(user.password, rounds);
-
-  // never save the plain text password in the db
-  user.password = hash
-
-  Users.add(user)
-    .then(saved => {
+  Users.add({ username, password: hash, role_name })
+    .then(newUser => {
       res.status(201).json({
-        message: `Great to have you, ${saved.username}`,
+        newUser
       });
     })
     .catch(next);
+
+
 });
 
 
@@ -59,37 +56,34 @@ router.post("/login", checkUsernameExists, (req, res, next) => {
     }
    */
 
-  function tokenBuilder(user) {
-    const payload = {
-      subject: user.user_id,
-      username: user.username,
-      role_name: user.role_name,
-    }
-    const options = {
-      expiresIn: '1d',
-    }
-    return jwt.sign(
-      payload,
-      JWT_SECRET,
-      options,
-    )
-  }
-  let { username, password } = req.body;
 
-  Users.findBy({ username }) // it would be nice to have middleware do this
-    .then(([user]) => {
-      if (user && bcrypt.compareSync(password, user.password)) {
-        const token = tokenBuilder(user);
-        console.log(token)
-        res.status(200).json({
-          message: `${user.username} is back!`, "token":
-          token,
-        });
-      } else {
-        res.status(401).json({ message: 'Invalid Credentials' });
-      }
-    })
-    .catch(next);
+
+  if (bcrypt.compareSync(req.body.password, req.user.password)) {
+    const token = tokenBuilder(req.user);
+    console.log(token)
+    res.status(200).json({
+      message: `${req.user.username} is back!`, "token":
+        token,
+    });
+  } else {
+    next({ status: 401, message: 'Invalid Credentials' });
+  }
 });
+
+function tokenBuilder(user) {
+  const payload = {
+    subject: user.user_id,
+    username: user.username,
+    role_name: user.role_name,
+  }
+  const options = {
+    expiresIn: '1d',
+  }
+  return jwt.sign(
+    payload,
+    JWT_SECRET,
+    options,
+  )
+}
 
 module.exports = router;
