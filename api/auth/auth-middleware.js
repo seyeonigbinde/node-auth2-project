@@ -1,4 +1,4 @@
-const { JWT_SECRET } = require("../secrets"); // use this secret!
+const { JWT_SECRET } = require("../secrets"); 
 const jwt = require('jsonwebtoken')
 const { findBy } = require("../users/users-model")
 

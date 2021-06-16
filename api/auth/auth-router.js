@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken')
 const router = require("express").Router();
 const { checkUsernameExists, validateRoleName } = require('./auth-middleware');
 const User = require('../users/users-model.js');
-const { JWT_SECRET } = require("../secrets"); // use this secret!
+const { JWT_SECRET } = require("../secrets"); 
 
 
 router.post("/register", validateRoleName, (req, res, next) => {
