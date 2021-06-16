@@ -1,6 +1,6 @@
 const { JWT_SECRET } = require("../secrets"); // use this secret!
 const jwt = require('jsonwebtoken')
-const Users = require("../users/users-model")
+const {findBy} = require("../users/users-model")
 
 const restricted = (req, res, next) => {
   /*
@@ -49,10 +49,9 @@ const only = role_name => (req, res, next) => {
 
     Pull the decoded token from the req object, to avoid verifying it again!
   */
-  console.log(`desired: ${role_name}`)
-  console.log(`actual: ${req.decodedJwt.role}`)
 
-  if (role_name === req.decodedJwt.role_name) {
+
+  if (role_name === req.decoded.role_name) {
     next()
   } else {
     res.status(403).json({
@@ -67,17 +66,16 @@ const checkUsernameExists = async (req, res, next) => {
     If the username in req.body does NOT exist in the database
     status 401
     {
-      "message": "Invalid credentials"
+      "message": "Invalid credentials"  
     }
   */
   try {
-    const existing = await Users
-      .findBy({ username: req.body.username })
-
-    if (existing.length) {
-      next()
-    } else {
+    const [ user ] = await findBy({ username: req.body.username })
+    if (!user) {
       next({ status: 401, message: `Invalid credentials` })
+    } else {
+      req.user = user
+      next()
     }
   } catch (err) {
     next(err)
@@ -104,19 +102,18 @@ const validateRoleName = (req, res, next) => {
       "message": "Role name can not be longer than 32 chars"
     }
   */
-  const { role_name } = req.body
-  if (!role_name || role_name.trim()) {
+  if (!req.body.role_name || req.body.role_name.trim()) {
     req.role_name = 'student'
     next()
   }
-  else if (role_name.trim() === 'admin') {
+  else if (req.body.role_name.trim() === 'admin') {
     next({ status: 422, message: 'Role name can not be admin'})
   } 
-  else if (role_name.trim().length > 32 ) {
+  else if (req.body.role_name.trim().length > 32 ) {
     next({ status: 422, message: 'Role name can not be longer than 32 chars'})
   }
    else {
-    req.role_name = role_name.trim()
+    req.role_name = req.body.role_name.trim()
     next()
   }
 
