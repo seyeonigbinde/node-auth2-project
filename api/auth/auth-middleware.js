@@ -18,24 +18,24 @@ const restricted = (req, res, next) => {
 
     Put the decoded token in the req object, to make life easier for middlewares downstream!
   */
- const token = req.headers.authorization
- if (token) {
-   jwt.verify(token, JWT_SECRET, (err, decoded) => {
-     if (err) {
-       res.status(401).json({
-         message: `Token required`
-       })
-     } else {
-       console.log('decoded token: ', decoded)
-       req.decodedJwt = decoded
-       next()
-     }
-   })
- } else {
-   res.status(401).json({
-     message: 'Token invalid'
-   })
- }
+  const token = req.headers.authorization
+  if (token) {
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if (err) {
+        res.status(401).json({
+          message: `Token required`
+        })
+      } else {
+        console.log('decoded token: ', decoded)
+        req.decodedJwt = decoded
+        next()
+      }
+    })
+  } else {
+    res.status(401).json({
+      message: 'Token invalid'
+    })
+  }
 
 }
 
@@ -71,18 +71,18 @@ const checkUsernameExists = async (req, res, next) => {
       "message": "Invalid credentials"
     }
   */
- try {
-  const existing = await Users
-    .findBy({ username: req.body.username })
+  try {
+    const existing = await Users
+      .findBy({ username: req.body.username })
 
-  if (existing.length) {
-    next()
-  } else {
-    next({ status: 401, message: `Invalid credentials` })
+    if (existing.length) {
+      next()
+    } else {
+      next({ status: 401, message: `Invalid credentials` })
+    }
+  } catch (err) {
+    next(err)
   }
-} catch (err) {
-  next(err)
-}
 }
 
 
@@ -105,7 +105,22 @@ const validateRoleName = (req, res, next) => {
       "message": "Role name can not be longer than 32 chars"
     }
   */
-
+  const error = { status: 422 }
+  const { role_name } = req.body
+  if (!role_name || role_name.trim().length < 1) {
+    next(req.role_name === 'student')
+  }
+  else if (role_name.trim() === 'admin') {
+    error.message = 'Role name can not be admin'
+  } 
+  else if (role_name.trim().length > 32 ) {
+    error.message = 'Role name can not be longer than 32 chars'
+  }
+  if (error.message) {
+    next(error)
+  } else {
+    next()
+  }
 
 }
 
